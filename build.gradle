@@ -1,0 +1,52 @@
+plugins {
+    id 'java-library' // 코어 모듈이므로 라이브러리로 빌드
+    alias(libs.plugins.protobuf) // 버전 카탈로그에서 protobuf plugin 적용
+}
+
+version = '0.1.0'
+group = 'com.example'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+dependencies {
+    //gRPC 통신 관련 의존성
+    implementation libs.grpc.netty.shaded     // Netty 기반 gRPC transport
+    implementation libs.grpc.stub             // gRPC 클라이언트/서버 Stub
+    implementation libs.grpc.protobuf         // gRPC용 Protobuf 지원
+    implementation libs.protobuf.java         // 일반 Protobuf Java 라이브러리
+    implementation libs.javax.annotation.api // javax.annotation API, gRPC stub 코드가 정상적으로 컴파일되기 위한 필수 요소
+}
+
+//gRPC 코드 자동 생성 설정
+protobuf {
+    protoc {
+        // Protobuf 컴파일러 버전 설정 (버전 카탈로그에서 참조)
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
+    }
+    plugins {
+        grpc {
+            // gRPC 코드 생성을 위한 protoc plugin
+            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.get()}"
+        }
+    }
+    generateProtoTasks {
+        // 모든 proto 태스크에 grpc plugin 적용
+        all().forEach { task ->
+            task.plugins {
+                grpc {}
+            }
+        }
+    }
+}
+
+tasks.named('test').configure {
+    enabled = false // 테스트 비활성화 (필요 시 활성화)
+}
